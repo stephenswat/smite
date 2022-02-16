@@ -1,0 +1,7 @@
+*.eps
+*.tex
+*.pdf
+build/
+output/
+tmp/
+__pycache__
