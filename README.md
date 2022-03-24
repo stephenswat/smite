@@ -1,11 +1,12 @@
-# Thread Divergence Overhead Artefact
+# SMITE
 
-This directory contains the complete code base to generate the model and plots
-as they are shown in our paper _"Statistically Modelling the Overhead of Thread
-Divergence in Variable Length SIMT Workloads"_. What follows is a description
-of the dependencies of this artefact, its directory structure, the methodology to reproduce the
-figures and tables from the paper, and the ways in which we can generate
-arbitrary models.
+**SMITE** is a Statistical Model for Imbalanced Thread Execution. This
+directory contains the complete code base to generate the model and plots as
+they are shown in our paper _"Statistically Modelling the Overhead of Thread
+Imbalance in Stochastic Variable-Length SIMT Workloads"_. What follows is a
+description of the dependencies of this artefact, its directory structure, the
+methodology to reproduce the figures and tables from the paper, and the ways in
+which we can generate arbitrary models.
 
 ## Dependencies
 
@@ -67,8 +68,8 @@ generating them requires hardware that may not be available to the reviewers
       is the denominator, and `p` is the propability. Thus, the line `5,3,0.15`
       indicates that an overhead of 1.667 has probability 0.15.
 * `gnuplot/`: Plotting scripts to generate the plots shown in our paper.
-  * `acts_distribution.gnuplot`: Produces Figure 6.
-  * `acts_overhead.gnuplot`: Produces Figure 7.
+  * `horizontal.gnuplot`: Produces Figure 7.
+  * `pmf_single.gnuplot`: Produces Figure 6.
   * `pmf.gnuplot`: Produces Figure 4.
   * `results.gnuplot`: Produces Figure 5.
 * `python/`: Data-processing scripts that act as a pre-processing step to the
@@ -80,7 +81,8 @@ generating them requires hardware that may not be available to the reviewers
   * `create_horizontal.py`: Pre-process data into histograms for plotting with
     `acts_overhead.gnuplot`.
   * `create_model.py`: Used to re-create `data/models/`.
-  * `create_table.py`: Used to generate Table 1.
+  * `create_mean_table.py`: Used to generate Table 1.
+  * `create_miniapp_table.py`: Used to generate Table 2.
 * `.gitignore`: Helper file for the Git version control system.
 * `Makefile`: Helper file used to programatically (re-)generate all the output
   files.
@@ -93,6 +95,12 @@ executing the following in the top-level directory:
 
 ```bash
 $ make
+```
+
+Other useful targets are `pdf_plots` and `all_pdf_plots`. These targets generate all of our figures as stand-alone PDF files, which can be examined without needing to run them through a TeX compiler. The `all_pdf_plots` target generates a full range of plots, not just the ones we use in our paper. To run this target, execute:
+
+```bash
+$ make all_pdf_plots
 ```
 
 Make can also run in a multi-threaded mode (using the `-j` flag). This should
@@ -122,14 +130,22 @@ $ touch -c /data/measurements/*
 Re-producing the artefact produces the following files:
 
 * `output/` †: Directory used to store all output graphs and tables.
-  * `combined.{tex,eps,pdf}` †: Figure 4 in the paper.
-  * `distribution_acts_prop.{tex,eps,pdf}` †: Figure 6 in the paper.
-  * `overhead_acts_prop.{tex,eps,pdf}` †: Figure 7 in the paper.
-  * `result_binom_40_050_16.{tex,eps,pdf}` †: Figure 5a in the paper.
-  * `result_geo_005_8.{tex,eps,pdf}` †: Figure 5b in the paper.
-  * `result_nbinom_5_030_4.{tex,eps,pdf}` †: Figure 5c in the paper.
-  * `result_pois_30_32.{tex,eps,pdf}` †: Figure 5d in the paper.
-  * `result_uniform_20_40_2.{tex,eps,pdf}` †: Figure 5e in the paper.
+  * `plots` †: Graphical plots.
+    * `pdf/` †: PDF versions of our plots (see `tex/` for information about
+      individual plots).
+    * `tex/` †: TeX versions of our plots.
+      * `combined.{tex,eps}` †: Figure 4 in the paper.
+      * `distribution_acts_prop.{tex,eps}` †: Figure 6 in the paper.
+      * `overhead_acts_prop.{tex,eps}` †: Figure 7 in the paper.
+      * `result_binom_40_050_16.{tex,eps}` †: Figure 5a in the paper.
+      * `result_geo_005_8.{tex,eps}` †: Figure 5b in the paper.
+      * `result_nbinom_5_030_4.{tex,eps}` †: Figure 5c in the paper.
+      * `result_pois_30_32.{tex,eps}` †: Figure 5d in the paper.
+      * `result_uniform_20_40_2.{tex,eps}` †: Figure 5e in the paper.
+  * `tables` †: The tables used in our paper.
+    * `comparison_table.tex` †: Table 1 in the paper.
+    * `miniapp_table.tex` †: Table 2 in the paper.
+* `tmp/` †: Temporary files which are only used to build the other figures.
 
 Each of the TeX files generated is accompanied by an EPS file. Unfortunately,
 these plots are not complete without these two parts. This is a consequence of
@@ -151,10 +167,9 @@ same.
 
 Writing re-producible artefacts for unknown systems is difficult, and although
 we have done our best to make the re-production process as painless as
-possible, things may go wrong.
-
-In the file `Makefile`, the top lines can be configured; this may be useful if
-the default executables for Python and gnuplot cannot be found.
+possible, things may go wrong. In the file `Makefile`, the top lines can be
+configured; this may be useful if the default executables for Python and
+gnuplot cannot be found.
 
 ### From-scratch re-production
 
