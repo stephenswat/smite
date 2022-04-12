@@ -22,6 +22,7 @@ target_compile_options(
     generate
     PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:
+        -Wall
         --Werror all-warnings
         --compiler-options "-Wall -Wextra -Werror"
     >

@@ -1,9 +1,13 @@
 # Executables used to generate plots.
 PYTHON=python3
 GNUPLOT=gnuplot
+CMAKE=cmake
 
 # Precision settings.
 EPSILON=0.000001
+
+# Benchmark settings.
+WORK_SET_COUNT ?= 131072
 
 # Settings for the size of the figures; to find this, put `\the\linewidth` in a
 # LaTeX figure, then divide that number (in pt) by 72.27.
@@ -14,6 +18,7 @@ PLOT_NAMES=overhead_acts_prop distribution_acts_prop combined result_binom_40_05
 	result_geo_005_8 result_nbinom_5_030_4 result_pois_30_32 \
 	result_uniform_20_40_2
 DEGREES_OF_PARALLELISM=2 4 8 16 32
+BUILD_DIR=build
 MODEL_NAMES=binom_40_050 geo_005 nbinom_5_030 pois_30 uniform_20_40
 MODEL_DIR=data/models
 MEASUREMENT_DIR=data/measurements
@@ -38,6 +43,10 @@ pdf_plots: directories $(OUTPUT_PDF_PLOT_DIR) $(addsuffix .pdf,$(addprefix $(OUT
 
 all_pdf_plots: directories pdf_plots $(addsuffix .pdf,$(addprefix $(OUTPUT_PDF_PLOT_DIR)/result_,$(ALL_MODELS)))
 
+all_unsynced_measurements: directories $(addsuffix .csv,$(addprefix $(MEASUREMENT_DIR)/data_unsynced_,$(ALL_MODELS)))
+
+all_synced_measurements: directories $(addsuffix .csv,$(addprefix $(MEASUREMENT_DIR)/data_synced_,$(ALL_MODELS)))
+
 # Internal targets. Here be dragons.
 all_models: directories $(MODEL_DIR) $(addprefix $(MODEL_DIR)/model_,$(addsuffix .csv,$(ALL_MODELS))) $(foreach t,$(DEGREES_OF_PARALLELISM),$(MODEL_DIR)/model_acts_prop_$(t).csv)
 
@@ -61,7 +70,43 @@ $(OUTPUT_TEX_PLOT_DIR):
 $(OUTPUT_PDF_PLOT_DIR):
 	mkdir -p $@
 
-$(OUTPUT_TABLE_DIR)/comparison_table.tex: python/create_mean_table.py all_models
+$(BUILD_DIR)/generate: cuda/CMakeLists.txt cuda/main.cu
+	cmake -S cuda -B $(BUILD_DIR)
+	cmake --build $(BUILD_DIR)
+
+$(MEASUREMENT_DIR)/data_unsynced_binom_40_050_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} -t $* -d binomial --trials 40 --probability 0.5 -o $@
+
+$(MEASUREMENT_DIR)/data_unsynced_geo_005_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} -t $* -d geometric --probability 0.05 -o $@
+
+$(MEASUREMENT_DIR)/data_unsynced_nbinom_5_030_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} -t $* -d nbinomial --failures 5 --probability 0.3 -o $@
+
+$(MEASUREMENT_DIR)/data_unsynced_pois_30_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} -t $* -d poisson --lambda 30 -o $@
+
+$(MEASUREMENT_DIR)/data_unsynced_uniform_20_40_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} -t $* -d uniform --low 20 --high 40 -o $@
+
+
+$(MEASUREMENT_DIR)/data_synced_binom_40_050_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} --sync -t $* -d binomial --trials 40 --probability 0.5 -o $@
+
+$(MEASUREMENT_DIR)/data_synced_geo_005_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} --sync -t $* -d geometric --probability 0.05 -o $@
+
+$(MEASUREMENT_DIR)/data_synced_nbinom_5_030_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} --sync -t $* -d nbinomial --failures 5 --probability 0.3 -o $@
+
+$(MEASUREMENT_DIR)/data_synced_pois_30_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} --sync -t $* -d poisson --lambda 30 -o $@
+
+$(MEASUREMENT_DIR)/data_synced_uniform_20_40_%.csv: $(BUILD_DIR)/generate
+	$< -s ${WORK_SET_COUNT} --sync -t $* -d uniform --low 20 --high 40 -o $@
+
+
+$(OUTPUT_TABLE_DIR)/comparison_table.tex: python/create_mean_table.py all_models all_synced_measurements
 	$(PYTHON) $< $@
 
 $(OUTPUT_TABLE_DIR)/miniapp_table.tex: python/create_miniapp_table.py $(MODEL_DIR)/model_acts_prop_2.csv $(MODEL_DIR)/model_acts_prop_4.csv $(MODEL_DIR)/model_acts_prop_8.csv $(MODEL_DIR)/model_acts_prop_16.csv $(MODEL_DIR)/model_acts_prop_32.csv
@@ -88,7 +133,7 @@ $(MODEL_DIR)/model_uniform_20_40_%.csv: python/create_model.py
 $(TMP_DIR)/horizontal_%.csv: python/create_horizontal.py $(MODEL_DIR)/model_%_2.csv $(MODEL_DIR)/model_%_4.csv $(MODEL_DIR)/model_%_8.csv $(MODEL_DIR)/model_%_16.csv $(MODEL_DIR)/model_%_32.csv
 	$(PYTHON) $< $(filter-out $<,$^) $@
 
-$(TMP_DIR)/histogram_%.csv: python/create_graph_histogram.py $(MODEL_DIR)/model_%.csv $(MEASUREMENT_DIR)/data_%.csv
+$(TMP_DIR)/histogram_%.csv: python/create_graph_histogram.py $(MODEL_DIR)/model_%.csv $(MEASUREMENT_DIR)/data_synced_%.csv
 	$(PYTHON) $< $(filter-out $<,$^) $@
 
 $(OUTPUT_TEX_PLOT_DIR)/overhead_%.tex: gnuplot/horizontal.gnuplot $(TMP_DIR)/horizontal_%.csv
@@ -124,3 +169,4 @@ $(OUTPUT_PDF_PLOT_DIR)/result_%.pdf: gnuplot/results.gnuplot $(TMP_DIR)/histogra
 	$(GNUPLOT) -e "render_pdf=1" -e "figure_width='$(FIGURE_WIDTH)'" -e "input_file='$(word 2, $^)'" -e "output_file='$@'" $<
 
 .SECONDARY:
+

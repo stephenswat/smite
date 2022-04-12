@@ -50,7 +50,8 @@ __device__ void mat_mul(float * a, float * b) {
     }
 }
 
-__global__ void kernel_simt(uint tc, float * ms, float * os, uint * ps, uint * cs1, uint * cs2) {
+template<bool Sync>
+__global__ void kernel(uint tc, float * ms, float * os, uint * ps, uint * cs1, uint * cs2) {
     int gid = blockIdx.x;
     int tid = threadIdx.x + blockIdx.x * tc;
     int lid = threadIdx.x;
@@ -77,16 +78,22 @@ __global__ void kernel_simt(uint tc, float * ms, float * os, uint * ps, uint * c
 
     uint t_start = clock64();
     uint t_mimt = clock64();
-
-    __syncwarp();
+    
+    if constexpr (Sync) {
+        __syncwarp();
+    }
 
     for (uint i = 0; i < ps[tid]; ++i) {
         mat_mul(acc, mat);
-        __syncwarp(__activemask());
+        if constexpr (Sync) {
+            __syncwarp(__activemask());
+        }
         t_mimt = clock64();
     }
 
-    __syncwarp();
+    if constexpr (Sync) {
+        __syncwarp();
+    }
 
     uint t_simt = clock64();
 
@@ -153,8 +160,12 @@ void parse_opts(int argc, char* argv[], boost::program_options::variables_map & 
         )
         (
             "smem",
-            boost::program_options::value<uint>()->default_value(32768),
+            boost::program_options::value<uint>(),
             "bytes of shared memory to occupy per warp"
+        )
+        (
+            "sync",
+            "enable explicit warp synchronization"
         )
     ;
 
@@ -291,7 +302,6 @@ int main(int argc, char* argv[]) {
 
     uint group_size = vm["threads"].as<uint>();
     uint group_count = vm["samples"].as<uint>();
-    uint smem_bytes = vm["smem"].as<uint>();
 
     BOOST_LOG_TRIVIAL(info) << "Setting work group size to " << group_size;
     BOOST_LOG_TRIVIAL(info) << "Setting work set count to " << group_count;
@@ -308,16 +318,18 @@ int main(int argc, char* argv[]) {
     std::uniform_real_distribution<float> mdis(0.0f, 1.0f);
     float * _ms = new float[MAT_DIM * MAT_DIM * work_items];
 
-    for (uint i = 0; i < MAT_DIM * MAT_DIM * work_items; ++i) {
+    for (std::size_t i = 0; i < MAT_DIM * MAT_DIM * work_items; ++i) {
         _ms[i] = mdis(gen);
     }
 
-    BOOST_LOG_TRIVIAL(info) << "Transfering input matrices to device (total size " << (MAT_DIM * MAT_DIM * work_items * sizeof(float)) << " bytes)";
+    std::size_t input_matrix_bytes = MAT_DIM * MAT_DIM * work_items * sizeof(float);
+    
+    BOOST_LOG_TRIVIAL(info) << "Transfering input matrices to device (total size " << input_matrix_bytes << " bytes)";
 
     float * ms;
 
-    cudaErrorCheck(cudaMalloc(&ms, MAT_DIM * MAT_DIM * work_items * sizeof(float)));
-    cudaErrorCheck(cudaMemcpy(ms, _ms, MAT_DIM * MAT_DIM * work_items * sizeof(float), cudaMemcpyHostToDevice));
+    cudaErrorCheck(cudaMalloc(&ms, input_matrix_bytes));
+    cudaErrorCheck(cudaMemcpy(ms, _ms, input_matrix_bytes, cudaMemcpyHostToDevice));
 
     /*
      * Prepare the array of powers to which we raise our matrices.
@@ -379,12 +391,45 @@ int main(int argc, char* argv[]) {
      */
     cudaErrorCheck(cudaDeviceSynchronize());
 
+    int dev_id;
+    cudaDeviceProp props;
+
+    cudaErrorCheck(cudaGetDevice(&dev_id));
+    cudaErrorCheck(cudaGetDeviceProperties(&props, dev_id));
+
+    BOOST_LOG_TRIVIAL(info) << "Device info:";
+    BOOST_LOG_TRIVIAL(info) << "    Name: " << props.name;
+    BOOST_LOG_TRIVIAL(info) << "    Max shared memory per block: " << props.sharedMemPerBlockOptin << "B";
+    BOOST_LOG_TRIVIAL(info) << "    CC version: " << props.major << "." << props.minor;
+
+    uint smem_target;
+
+    if (vm.count("smem")) {
+        smem_target = vm["smem"].as<uint>();
+    } else {
+        smem_target = props.sharedMemPerBlockOptin;
+    }
+
+    if (smem_target > props.sharedMemPerBlock) {
+        BOOST_LOG_TRIVIAL(info) << "Setting maximum shared memory to " << props.sharedMemPerBlockOptin << "B";
+
+        cudaErrorCheck(cudaFuncSetAttribute(kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, props.sharedMemPerBlockOptin));
+        cudaErrorCheck(cudaFuncSetAttribute(kernel<false>, cudaFuncAttributeMaxDynamicSharedMemorySize, props.sharedMemPerBlockOptin));
+    }
+
     BOOST_LOG_TRIVIAL(info) << "Invoking kernel:";
     BOOST_LOG_TRIVIAL(info) << "    " << group_count << " blocks";
     BOOST_LOG_TRIVIAL(info) << "    " << WARP_SIZE << " threads per block";
-    BOOST_LOG_TRIVIAL(info) << "    " << smem_bytes << " bytes of shared memory per block";
+    BOOST_LOG_TRIVIAL(info) << "    " << smem_target << " bytes of shared memory per block";
 
-    kernel_simt<<<group_count, WARP_SIZE, smem_bytes>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
+    if (vm.count("sync")) {
+        BOOST_LOG_TRIVIAL(info) << "    Running in synchronized mode";
+        kernel<true><<<group_count, WARP_SIZE, smem_target>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "    Running in unsynchronized mode";
+        kernel<false><<<group_count, WARP_SIZE, smem_target>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
+    }
+    
     cudaErrorCheck(cudaPeekAtLastError());
 
     BOOST_LOG_TRIVIAL(info) << "Awaiting kernel synchronization";
