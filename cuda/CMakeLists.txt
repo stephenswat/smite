@@ -1,16 +1,17 @@
 project(DivergenceOverheadModelValidation)
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.19)
 
 enable_language(CUDA)
 
 find_package(
     Boost
-    1.65.0
+    1.71.0
+    REQUIRED
     COMPONENTS
-    program_options
-    log_setup
     log
+    log_setup
+    program_options
 )
 
 add_executable(
@@ -31,9 +32,9 @@ target_compile_options(
 target_link_libraries(
     generate
     PRIVATE
-    Boost::program_options
-    Boost::log_setup
     Boost::log
+    Boost::log_setup
+    Boost::program_options
 )
 
 set_property(
