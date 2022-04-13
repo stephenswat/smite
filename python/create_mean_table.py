@@ -43,7 +43,7 @@ if __name__ == "__main__":
             for n in [2, 4, 8, 16, 32]:
                 mod_df = pandas.read_csv("data/models/model_%s_%d.csv" % (d, n))
                 mod_df["value"] = mod_df["n"] / mod_df["d"]
-                data_df = pandas.read_csv("data/measurements/data_synced_%s_%d.csv" % (d, n))
+                data_df = pandas.read_csv("data/measurements/synced/%s_%d.csv" % (d, n))
                 data_df["sim_value"] = data_df["sim_simt"] / data_df["sim_mimt"]
                 data_df["mea_value"] = data_df["mea_simt"] / data_df["mea_mimt"]
 

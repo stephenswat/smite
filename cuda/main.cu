@@ -22,8 +22,7 @@ void _cudaErrorCheck(cudaError_t code, const char *file, int line)
     }
 }
 
-static constexpr int WARP_SIZE = 32;
-static constexpr int MAT_DIM = 8;
+static constexpr int MAT_DIM = 16;
 
 /**
  * Calculate a = a * b;
@@ -154,14 +153,14 @@ void parse_opts(int argc, char* argv[], boost::program_options::variables_map & 
             "number of threads to run in lock-step"
         )
         (
+            "blocksize,b",
+            boost::program_options::value<uint>()->default_value(256),
+            "number of threads per block (used to control occupancy)"
+        )
+        (
             "samples,s",
             boost::program_options::value<uint>()->default_value(131072),
             "number of samples to run"
-        )
-        (
-            "smem",
-            boost::program_options::value<uint>(),
-            "bytes of shared memory to occupy per warp"
         )
         (
             "sync",
@@ -402,32 +401,31 @@ int main(int argc, char* argv[]) {
     BOOST_LOG_TRIVIAL(info) << "    Max shared memory per block: " << props.sharedMemPerBlockOptin << "B";
     BOOST_LOG_TRIVIAL(info) << "    CC version: " << props.major << "." << props.minor;
 
-    uint smem_target;
+    cudaFuncAttributes fattrs;
 
-    if (vm.count("smem")) {
-        smem_target = vm["smem"].as<uint>();
+    if (vm.count("sync")) {
+        cudaErrorCheck(cudaFuncGetAttributes(&fattrs, kernel<true>));
     } else {
-        smem_target = props.sharedMemPerBlockOptin;
+        cudaErrorCheck(cudaFuncGetAttributes(&fattrs, kernel<false>));
     }
 
-    if (smem_target > props.sharedMemPerBlock) {
-        BOOST_LOG_TRIVIAL(info) << "Setting maximum shared memory to " << props.sharedMemPerBlockOptin << "B";
+    BOOST_LOG_TRIVIAL(info) << "Kernel information:";
+    BOOST_LOG_TRIVIAL(info) << "    Maximum number of threads per block: " << fattrs.maxThreadsPerBlock;
+    BOOST_LOG_TRIVIAL(info) << "    Number of registers per thread: " << fattrs.numRegs;
+    BOOST_LOG_TRIVIAL(info) << "    PTX version: " << (fattrs.ptxVersion / 10) << "." << (fattrs.ptxVersion % 10);
 
-        cudaErrorCheck(cudaFuncSetAttribute(kernel<true>, cudaFuncAttributeMaxDynamicSharedMemorySize, props.sharedMemPerBlockOptin));
-        cudaErrorCheck(cudaFuncSetAttribute(kernel<false>, cudaFuncAttributeMaxDynamicSharedMemorySize, props.sharedMemPerBlockOptin));
-    }
+    uint block_size = vm["blocksize"].as<uint>();
 
     BOOST_LOG_TRIVIAL(info) << "Invoking kernel:";
     BOOST_LOG_TRIVIAL(info) << "    " << group_count << " blocks";
-    BOOST_LOG_TRIVIAL(info) << "    " << WARP_SIZE << " threads per block";
-    BOOST_LOG_TRIVIAL(info) << "    " << smem_target << " bytes of shared memory per block";
+    BOOST_LOG_TRIVIAL(info) << "    " << block_size << " threads per block";
 
     if (vm.count("sync")) {
         BOOST_LOG_TRIVIAL(info) << "    Running in synchronized mode";
-        kernel<true><<<group_count, WARP_SIZE, smem_target>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
+        kernel<true><<<group_count, block_size>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
     } else {
         BOOST_LOG_TRIVIAL(info) << "    Running in unsynchronized mode";
-        kernel<false><<<group_count, WARP_SIZE, smem_target>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
+        kernel<false><<<group_count, block_size>>>(group_size, ms, os, ps, cs_simt, cs_mimt);
     }
     
     cudaErrorCheck(cudaPeekAtLastError());

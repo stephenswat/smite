@@ -43,14 +43,14 @@ pdf_plots: directories $(OUTPUT_PDF_PLOT_DIR) $(addsuffix .pdf,$(addprefix $(OUT
 
 all_pdf_plots: directories pdf_plots $(addsuffix .pdf,$(addprefix $(OUTPUT_PDF_PLOT_DIR)/result_,$(ALL_MODELS)))
 
-all_unsynced_measurements: directories $(addsuffix .csv,$(addprefix $(MEASUREMENT_DIR)/data_unsynced_,$(ALL_MODELS)))
+all_unsynced_measurements: directories $(addsuffix .csv,$(addprefix $(MEASUREMENT_DIR)/unsynced/,$(ALL_MODELS)))
 
-all_synced_measurements: directories $(addsuffix .csv,$(addprefix $(MEASUREMENT_DIR)/data_synced_,$(ALL_MODELS)))
+all_synced_measurements: directories $(addsuffix .csv,$(addprefix $(MEASUREMENT_DIR)/synced/,$(ALL_MODELS)))
 
 # Internal targets. Here be dragons.
 all_models: directories $(MODEL_DIR) $(addprefix $(MODEL_DIR)/model_,$(addsuffix .csv,$(ALL_MODELS))) $(foreach t,$(DEGREES_OF_PARALLELISM),$(MODEL_DIR)/model_acts_prop_$(t).csv)
 
-directories: $(MODEL_DIR) $(TMP_DIR) $(MEASUREMENT_DIR) $(OUTPUT_TABLE_DIR) $(OUTPUT_TEX_PLOT_DIR) $(OUTPUT_PDF_PLOT_DIR)
+directories: $(MODEL_DIR) $(TMP_DIR) $(MEASUREMENT_DIR) $(MEASUREMENT_DIR)/synced $(MEASUREMENT_DIR)/unsynced $(OUTPUT_TABLE_DIR) $(OUTPUT_TEX_PLOT_DIR) $(OUTPUT_PDF_PLOT_DIR)
 
 $(TMP_DIR):
 	mkdir -p $@
@@ -59,6 +59,12 @@ $(MODEL_DIR):
 	mkdir -p $@
 
 $(MEASUREMENT_DIR):
+	mkdir -p $@
+
+$(MEASUREMENT_DIR)/synced:
+	mkdir -p $@
+
+$(MEASUREMENT_DIR)/unsynced:
 	mkdir -p $@
 
 $(OUTPUT_TABLE_DIR):
@@ -74,35 +80,35 @@ $(BUILD_DIR)/generate: cuda/CMakeLists.txt cuda/main.cu
 	cmake -S cuda -B $(BUILD_DIR)
 	cmake --build $(BUILD_DIR)
 
-$(MEASUREMENT_DIR)/data_unsynced_binom_40_050_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/unsynced/binom_40_050_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} -t $* -d binomial --trials 40 --probability 0.5 -o $@
 
-$(MEASUREMENT_DIR)/data_unsynced_geo_005_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/unsynced/geo_005_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} -t $* -d geometric --probability 0.05 -o $@
 
-$(MEASUREMENT_DIR)/data_unsynced_nbinom_5_030_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/unsynced/nbinom_5_030_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} -t $* -d nbinomial --failures 5 --probability 0.3 -o $@
 
-$(MEASUREMENT_DIR)/data_unsynced_pois_30_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/unsynced/pois_30_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} -t $* -d poisson --lambda 30 -o $@
 
-$(MEASUREMENT_DIR)/data_unsynced_uniform_20_40_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/unsynced/uniform_20_40_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} -t $* -d uniform --low 20 --high 40 -o $@
 
 
-$(MEASUREMENT_DIR)/data_synced_binom_40_050_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/synced/binom_40_050_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} --sync -t $* -d binomial --trials 40 --probability 0.5 -o $@
 
-$(MEASUREMENT_DIR)/data_synced_geo_005_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/synced/geo_005_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} --sync -t $* -d geometric --probability 0.05 -o $@
 
-$(MEASUREMENT_DIR)/data_synced_nbinom_5_030_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/synced/nbinom_5_030_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} --sync -t $* -d nbinomial --failures 5 --probability 0.3 -o $@
 
-$(MEASUREMENT_DIR)/data_synced_pois_30_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/synced/pois_30_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} --sync -t $* -d poisson --lambda 30 -o $@
 
-$(MEASUREMENT_DIR)/data_synced_uniform_20_40_%.csv: $(BUILD_DIR)/generate
+$(MEASUREMENT_DIR)/synced/uniform_20_40_%.csv: $(BUILD_DIR)/generate
 	$< -s ${WORK_SET_COUNT} --sync -t $* -d uniform --low 20 --high 40 -o $@
 
 
@@ -133,7 +139,7 @@ $(MODEL_DIR)/model_uniform_20_40_%.csv: python/create_model.py
 $(TMP_DIR)/horizontal_%.csv: python/create_horizontal.py $(MODEL_DIR)/model_%_2.csv $(MODEL_DIR)/model_%_4.csv $(MODEL_DIR)/model_%_8.csv $(MODEL_DIR)/model_%_16.csv $(MODEL_DIR)/model_%_32.csv
 	$(PYTHON) $< $(filter-out $<,$^) $@
 
-$(TMP_DIR)/histogram_%.csv: python/create_graph_histogram.py $(MODEL_DIR)/model_%.csv $(MEASUREMENT_DIR)/data_synced_%.csv
+$(TMP_DIR)/histogram_%.csv: python/create_graph_histogram.py $(MODEL_DIR)/model_%.csv $(MEASUREMENT_DIR)/synced/%.csv
 	$(PYTHON) $< $(filter-out $<,$^) $@
 
 $(OUTPUT_TEX_PLOT_DIR)/overhead_%.tex: gnuplot/horizontal.gnuplot $(TMP_DIR)/horizontal_%.csv
