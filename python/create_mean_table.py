@@ -29,7 +29,7 @@ if __name__ == "__main__":
         )
         of.write("\\cmidrule(lr){3-4}\\cmidrule(lr){5-6}\\cmidrule(lr){7-8}\n")
         of.write(
-            "Dist. & $n$ & \\multicolumn{1}{c}{$\\mu_A$} & \\multicolumn{1}{c}{$\\eta_{\\mu_S}$} & \\multicolumn{1}{c}{$\\mu_S$} & \\multicolumn{1}{c}{$\\eta_{\\mu_M}$} & \\multicolumn{1}{c}{$\\mu_M$} & \\multicolumn{1}{c}{$\\eta_{\\mu_A}$} \\\\\n"
+            "Dist. & $n$ & \\multicolumn{1}{c}{$\\mu_A$} & \\multicolumn{1}{c}{$\\eta(\\mu_A, \\mu_S)$} & \\multicolumn{1}{c}{$\\mu_S$} & \\multicolumn{1}{c}{$\\eta(\\mu_S, \\mu_M)$} & \\multicolumn{1}{c}{$\\mu_M$} & \\multicolumn{1}{c}{$\\eta(\\mu_M, \\mu_A)$} \\\\\n"
         )
         of.write("\\midrule\n")
 
