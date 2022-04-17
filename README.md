@@ -97,7 +97,11 @@ executing the following in the top-level directory:
 $ make
 ```
 
-Other useful targets are `pdf_plots` and `all_pdf_plots`. These targets generate all of our figures as stand-alone PDF files, which can be examined without needing to run them through a TeX compiler. The `all_pdf_plots` target generates a full range of plots, not just the ones we use in our paper. To run this target, execute:
+Other useful targets are `pdf_plots` and `all_pdf_plots`. These targets
+generate all of our figures as stand-alone PDF files, which can be examined
+without needing to run them through a TeX compiler. The `all_pdf_plots` target
+generates a full range of plots, not just the ones we use in our paper. To run
+this target, execute:
 
 ```bash
 $ make all_pdf_plots
@@ -122,7 +126,14 @@ Updating the modification date on the measured data is also possible, and may
 prove useful if no CUDA GPU is available:
 
 ```bash
-$ touch -c /data/measurements/*
+$ touch -c data/measurements/*
+```
+
+Updating the modification date on all the transient files can be achieved
+through the following command:
+
+```bash
+$ touch -c data/**/*
 ```
 
 ### Resulting files

@@ -83,10 +83,7 @@ if __name__ == "__main__":
             float(args.parameters[0]),
         )
     elif args.distribution == "bernoulli":
-        d = scipy.stats.binom(
-            1,
-            float(args.parameters[0])
-        )
+        d = scipy.stats.binom(1, float(args.parameters[0]))
     elif args.distribution == "file":
         df = pandas.read_csv(args.parameters[0])
         d = scipy.stats.rv_discrete(values=(df["n"], df["p"]))

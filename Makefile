@@ -16,7 +16,7 @@ FIGURE_WIDTH=3.335in
 # Modifying the following variables may void the warranty.
 PLOT_NAMES=overhead_acts_prop distribution_acts_prop combined result_binom_40_050_16 \
 	result_geo_005_8 result_nbinom_5_030_4 result_pois_30_32 \
-	result_uniform_20_40_2
+	result_uniform_20_40_2 its_comparison
 DEGREES_OF_PARALLELISM=2 4 8 16 32
 BUILD_DIR=build
 MODEL_NAMES=binom_40_050 geo_005 nbinom_5_030 pois_30 uniform_20_40
@@ -142,6 +142,9 @@ $(TMP_DIR)/horizontal_%.csv: python/create_horizontal.py $(MODEL_DIR)/model_%_2.
 $(TMP_DIR)/histogram_%.csv: python/create_graph_histogram.py $(MODEL_DIR)/model_%.csv $(MEASUREMENT_DIR)/synced/%.csv
 	$(PYTHON) $< $(filter-out $<,$^) $@
 
+$(TMP_DIR)/its_comparison.csv: python/create_its_data.py all_synced_measurements all_unsynced_measurements
+	$(PYTHON) $< $@
+
 $(OUTPUT_TEX_PLOT_DIR)/overhead_%.tex: gnuplot/horizontal.gnuplot $(TMP_DIR)/horizontal_%.csv
 	$(GNUPLOT) -e "figure_width='$(FIGURE_WIDTH)'" -e "input_file='$(word 2, $^)'" -e "output_file='$(notdir $@)'" $<
 	mv $(notdir $@) $@
@@ -162,6 +165,11 @@ $(OUTPUT_TEX_PLOT_DIR)/result_%.tex: gnuplot/results.gnuplot $(TMP_DIR)/histogra
 	mv $(notdir $@) $@
 	mv $(patsubst %.tex,%.eps,$(notdir $@)) $(patsubst %.tex,%.eps,$@)
 
+$(OUTPUT_TEX_PLOT_DIR)/its_comparison.tex: gnuplot/its.gnuplot $(TMP_DIR)/its_comparison.csv
+	$(GNUPLOT) -e "figure_width='$(FIGURE_WIDTH)'" -e "input_file='$(word 2, $^)'" -e "output_file='$(notdir $@)'" $<
+	mv $(notdir $@) $@
+	mv $(patsubst %.tex,%.eps,$(notdir $@)) $(patsubst %.tex,%.eps,$@)
+
 $(OUTPUT_PDF_PLOT_DIR)/overhead_%.pdf: gnuplot/horizontal.gnuplot $(TMP_DIR)/horizontal_%.csv
 	$(GNUPLOT) -e "render_pdf=1" -e "figure_width='$(FIGURE_WIDTH)'" -e "input_file='$(word 2, $^)'" -e "output_file='$@'" $<
 
@@ -174,5 +182,7 @@ $(OUTPUT_PDF_PLOT_DIR)/combined.pdf: gnuplot/pmf.gnuplot
 $(OUTPUT_PDF_PLOT_DIR)/result_%.pdf: gnuplot/results.gnuplot $(TMP_DIR)/histogram_%.csv
 	$(GNUPLOT) -e "render_pdf=1" -e "figure_width='$(FIGURE_WIDTH)'" -e "input_file='$(word 2, $^)'" -e "output_file='$@'" $<
 
-.SECONDARY:
+$(OUTPUT_PDF_PLOT_DIR)/its_comparison.pdf: gnuplot/its.gnuplot $(TMP_DIR)/its_comparison.csv
+	$(GNUPLOT) -e "render_pdf=1" -e "figure_width='$(FIGURE_WIDTH)'" -e "input_file='$(word 2, $^)'" -e "output_file='$@'" $<
 
+.SECONDARY:

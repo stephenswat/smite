@@ -7,9 +7,7 @@ import scipy.stats
 from common import *
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Create our mini-app table."
-    )
+    parser = argparse.ArgumentParser(description="Create our mini-app table.")
 
     parser.add_argument(
         "m02",
@@ -46,9 +44,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with open(args.output, "w") as of:
-        of.write(
-            "\\begin{tabular}{R{0.6cm} R{0.6cm} R{0.8cm} R{0.8cm} R{0.8cm}}\n"
-        )
+        of.write("\\begin{tabular}{R{0.6cm} R{0.6cm} R{0.8cm} R{0.8cm} R{0.8cm}}\n")
         of.write("\\toprule\n")
         of.write(
             "Par.\\tnote{1} & Thr.\\tnote{2} & $h_d(n)$ & $h_p(n)$ & $h(n)$ \\\\ \\midrule\n"
@@ -73,24 +69,29 @@ if __name__ == "__main__":
 
         parls = [1, 2, 4, 8, 16, 32]
 
-        out_df = pandas.DataFrame(data={
-            "par": parls,
-            "thr": [32 // n for n in parls],
-            "hdn": [means[n] for n in parls],
-            "hpn": [(20 + (32 // n) * 1) / (20 + 1) for n in parls]
-        })
+        out_df = pandas.DataFrame(
+            data={
+                "par": parls,
+                "thr": [32 // n for n in parls],
+                "hdn": [means[n] for n in parls],
+                "hpn": [(20 + (32 // n) * 1) / (20 + 1) for n in parls],
+            }
+        )
 
         out_df["h_n"] = out_df["hdn"] * out_df["hpn"]
 
         for _, r in out_df.iterrows():
-            of.write("%d & %d & %.3f & %.3f & {%s%.3f}\\\\\n" % (
-                r["par"],
-                r["thr"],
-                r["hdn"],
-                r["hpn"],
-                "\\bf " if numpy.isclose(r["h_n"], out_df["h_n"].min()) else "",
-                r["h_n"]
-            ))
+            of.write(
+                "%d & %d & %.3f & %.3f & {%s%.3f}\\\\\n"
+                % (
+                    r["par"],
+                    r["thr"],
+                    r["hdn"],
+                    r["hpn"],
+                    "\\bf " if numpy.isclose(r["h_n"], out_df["h_n"].min()) else "",
+                    r["h_n"],
+                )
+            )
 
         of.write("\\bottomrule\n")
         of.write("\\end{tabular}\n")
