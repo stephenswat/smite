@@ -55,12 +55,16 @@ generating them requires hardware that may not be available to the reviewers
       require exactly 45 steps.
   * `measurements/` †: Measured results taken on a GPU. Can be re-generated if
     the `cuda/` project can be built and if an NVIDIA GPU is available.
-    * `data_XXX_YY.csv` †: Contains measurement data as well as simulation data
-      for distribution `XXX` with `YY` concurrent parallel jobs. The column `i`
-      is an index column, `sim_simt` is the SIMT cost of the Monte Carlo
-      simulation, `sim_mimt` is the MIMD cost of the Monte Carlo simulation,
-      `mea_simt` is the SIMT timing measured on the GPU, and `mea_mimt` is the
-      MIMD timing measured on the same GPU.
+    * `synced/` †: Measured using explicit warp-level synchronisation, used for
+      graphs in the paper.
+      * `XXX_YY.csv` †: Contains measurement data as well as simulation data
+        for distribution `XXX` with `YY` concurrent parallel jobs. The column
+        `i` is an index column, `sim_simt` is the SIMT cost of the Monte Carlo
+        simulation, `sim_mimt` is the MIMD cost of the Monte Carlo simulation,
+        `mea_simt` is the SIMT timing measured on the GPU, and `mea_mimt` is
+        the MIMD timing measured on the same GPU.
+    * `unsynced/` †: Measured without explicit warp-level synchronisation,
+      files are in the same format as in `synced/`.
   * `models/` †: Pre-computed models, can be re-generated using Python,
     although this may take some time.
     * `model_XXX_YY.csv` †: Contains modelled probabilities for distribution
@@ -70,8 +74,9 @@ generating them requires hardware that may not be available to the reviewers
 * `gnuplot/`: Plotting scripts to generate the plots shown in our paper.
   * `horizontal.gnuplot`: Produces Figure 7.
   * `pmf_single.gnuplot`: Produces Figure 6.
-  * `pmf.gnuplot`: Produces Figure 4.
-  * `results.gnuplot`: Produces Figure 5.
+  * `pmf.gnuplot`: Produces Figure 3.
+  * `results.gnuplot`: Produces Figure 4.
+  * `its.gnuplot`: Produces Figure 5.
 * `python/`: Data-processing scripts that act as a pre-processing step to the
   plotting scripts (these scripts are explained in more detail later).
   * `__init__.py`: Declares a Python package.
@@ -80,9 +85,10 @@ generating them requires hardware that may not be available to the reviewers
     plotting with `results.gnuplot`.
   * `create_horizontal.py`: Pre-process data into histograms for plotting with
     `acts_overhead.gnuplot`.
-  * `create_model.py`: Used to re-create `data/models/`.
+  * `create_its_data.py`: Used to generate the data for `its.gnuplot`.
   * `create_mean_table.py`: Used to generate Table 1.
   * `create_miniapp_table.py`: Used to generate Table 2.
+  * `create_model.py`: Used to re-create `data/models/`.
 * `.gitignore`: Helper file for the Git version control system.
 * `Makefile`: Helper file used to programatically (re-)generate all the output
   files.
