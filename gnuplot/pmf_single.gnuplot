@@ -1,4 +1,4 @@
-figure_height='1in'
+figure_height='0.8in'
 
 if (!exists("render_pdf")) {
     render_pdf = 0
@@ -18,6 +18,8 @@ set bmargin at screen 0.2
 
 set ylabel "$f_\\mathrm{Acts}(x)$" offset 2
 set ytics 0.02
+
+set xrange [0:80]
 
 set output output_file
 plot input_file u 1:2 every ::1 w histeps lw 2 lc "#e41a1c" notitle
