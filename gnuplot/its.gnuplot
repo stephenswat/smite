@@ -1,4 +1,4 @@
-figure_height='1.2in'
+figure_height='3in'
 
 if (!exists("render_pdf")) {
     render_pdf = 0

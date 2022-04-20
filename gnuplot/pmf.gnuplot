@@ -8,7 +8,7 @@ negbin(x,r,p)=r<=0||!isint(r)||p<=0||p>1?1/0:  !isint(x)?1/0:x<0?0.0:p==1?(x==0?
 
 set style arrow 1 nohead lc "black"
 
-figure_height='0.75in'
+figure_height='2.5in'
 
 if (!exists("render_pdf")) {
     render_pdf = 0
@@ -25,16 +25,17 @@ set yrange [0:0.15]
 set xrange [0:40]
 set xtics 0,10,50
 set ylabel "$p(x)$" offset 2
-set rmargin at screen 0.725
+set rmargin at screen 0.98
 set tmargin at screen 0.98
 set lmargin at screen 0.15
-set bmargin at screen 0.2
+set bmargin at screen 0.05
 set key outside right
 set key samplen 0.5
 set key spacing 0.75
-set key Left
+set key outside
 set key width -1
 set ytics 0.03
+unset key
 
 f1(x) = binom(x, 40, 0.5)
 f2(x) = geometric(x, 0.05)
