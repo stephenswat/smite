@@ -25,8 +25,8 @@ set key width -2.5
 set ylabel "$P\\left(\\mathcal{H}(w) = x\\right)$" offset 2
 
 set output output_file
-plot input_file u 1:2 every ::1 w steps lw 2 lc "#e41a1c" title "$n = 2$",\
-     "" u 1:3 every ::1 w steps lw 2 lc "#377eb8" title "$n = 4$",\
-     "" u 1:4 every ::1 w steps lw 2 lc "#4daf4a" title "$n = 8$",\
-     "" u 1:5 every ::1 w steps lw 2 lc "#984ea3" title "$n = 16$",\
-     "" u 1:6 every ::1 w steps lw 2 lc "#ff7f00" title "$n = 32$"
+plot input_file u 1:2 every ::1 w steps lw 2 lc "#e41a1c" title "$|w| = 2$",\
+     "" u 1:3 every ::1 w steps lw 2 lc "#377eb8" title "$|w| = 4$",\
+     "" u 1:4 every ::1 w steps lw 2 lc "#4daf4a" title "$|w| = 8$",\
+     "" u 1:5 every ::1 w steps lw 2 lc "#984ea3" title "$|w| = 16$",\
+     "" u 1:6 every ::1 w steps lw 2 lc "#ff7f00" title "$|w| = 32$"
