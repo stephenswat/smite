@@ -17,10 +17,9 @@ set tmargin at screen 0.9
 set bmargin at screen 0.2
 
 set key samplen 0.5
-set key spacing 0.75
 set ytics 0.08
 set key Left
-set key width -2.5
+set key width -4
 #set xlabel "$x$" offset 0,0.5
 set ylabel "$P\\left(\\mathcal{H}(w) = x\\right)$" offset 2
 
