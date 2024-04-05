@@ -11,7 +11,7 @@ WORK_SET_COUNT ?= 131072
 
 # Settings for the size of the figures; to find this, put `\the\linewidth` in a
 # LaTeX figure, then divide that number (in pt) by 72.27.
-FIGURE_WIDTH=3.335in
+FIGURE_WIDTH=5in
 
 # Modifying the following variables may void the warranty.
 PLOT_NAMES=overhead_acts_prop distribution_acts_prop combined result_binom_40_050_16 \
